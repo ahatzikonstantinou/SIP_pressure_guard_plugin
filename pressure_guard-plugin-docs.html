@@ -1,0 +1,85 @@
+<!DOCTYPE HTML>
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=windows-1252">
+	<TITLE>water-tank-plugin-docs.html</TITLE>
+	<META NAME="viewport" CONTENT="width=device-width, initial-scale=1.0">
+	<STYLE TYPE="text/css">
+	<!--
+		P { font-family: "Lucida Grande", "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Lucida Sans Unicode", "Helvetica", "Arial", sans-serif }
+		H2.cjk { font-family: "SimSun" }
+		H2.ctl { font-family: "Mangal" }
+		PRE.cjk { font-family: "NSimSun", monospace }
+		CODE.cjk { font-family: "NSimSun", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" BGCOLOR="#ffffff" DIR="LTR" STYLE="border: none; padding: 0in">
+<H1><A NAME="proto-plugin-documentation"></A>Proto Plugin
+Documentation</H1>
+<H2 CLASS="western"><A NAME="about-the-proto-plugin"></A>About the
+Water-Tank Plugin</H2>
+<P>The Water-Tank plugin manages ... water tanks. It receives MQTT messages from sensors.
+	The messages must be json formatted and contain fields "sensor_id" and "measurement".
+	Measurement is expected to be the distance between the top of the water tank and the 
+	surface of the water in the tank. If the sensor is placed lower or higher than the top
+	of the tank, enter the appropriate value at the "sensor_offset_from_top" field.
+	Also, enter values for  min and max valid sensor measurment for additional validation
+	of incomming sensor measurements.</P>
+<P>The Water-Tank plugin allows the specification of multiple water tanks that will be
+	displayed in the homepage of SIP. Depending on the configuration of the water tanks'
+	specifications, the water-tank plugin will display the status of the water tank in 
+	real time as it changes based on incomming sensor measurementss. It will also display
+	the time that has passed since the last sensor measurement.</P>
+<P>The Water-Tank plugin allows the specification of certain water percentages in the tank
+	that may be considered important. There are three such levels OVERFLOW, WARNING,
+	and CRITICAL. For each such level there is also a corresponding SAFETY level that
+	may be specified. For example, if the water in the tank goes down to a critical level a
+	station may correspond to a pump. The station may run for a certain amount of time, or
+	until the water percentage crosses back over the critical level.If the tank configuration
+	includes a corresponding safety level the station will run until the percentage of water
+	in the tank crosses over that safety level.
+	Except from stations, programs may also run, be enabled, or suspended when an important 
+	water percentage is reached. They will, be disabled or re-enabled when the water percentage
+	crosses over that level or its corresponding SAFETY level if one has been defined.
+	</P>
+<P>The plugin includes the folowing files:</P>
+<UL>
+	<LI><P STYLE="margin-bottom: 0in"><STRONG>water_tank.py</STRONG><BR>The
+	python program that does the actual work of the plugin. Location:
+	<STRONG>SIP/plugins</STRONG></P>
+	<LI><P STYLE="margin-bottom: 0in"><STRONG>water_tank.html</STRONG><BR>A
+	web.py template that provides a user interface for the plugin. It
+	includes both Python code and web page markup. Location:
+	<STRONG>SIP/templates</STRONG></P>
+	<LI><P STYLE="margin-bottom: 0in"><STRONG>water_tank.js</STRONG><BR>A
+	javascript file that displays water-tank information in SIP's homepage. Location:
+	<STRONG>SIP/static/scripts</STRONG></P>
+	<LI><P STYLE="margin-bottom: 0in"><STRONG>water_tank.css</STRONG><BR>A
+	css file with all the classes used by the plugin. Location:
+	<STRONG>SIP/static/css</STRONG></P>
+	<LI><P STYLE="margin-bottom: 0in"><STRONG>water-tank-plugin-docs.html</STRONG><BR>This
+	file. Provides documentation for the plugin including any special hardware needed and 
+	set up instructions. Location: <STRONG>SIP/static/docs/plugins</STRONG></P>
+	<LI><P STYLE="margin-bottom: 0in"><STRONG>water_tank.manifest</STRONG><BR>A
+	simple text file containing a list of each of the plugin&rsquo;s
+	files with the path to it&rsquo;s location. The manifest is used by
+	the plugin manager to install and uninstall the plugin. The file
+	also contains information about the plugin such as author, brief description, requirements, etc.
+	Location: <STRONG>SIP/plugins/manifest</STRONG></P>
+	<LI><P><STRONG>water_tank.json</STRONG><BR>Used for
+	persistant storage of plugin settings. It is created by the plugin
+	the first time it is run and is not installed with the other files.
+	This allows for software updates without overwriting existing
+	settings. Location: <STRONG>SIP/data</STRONG></P>
+	<LI><P><STRONG>water_tank.sensor_log.json</STRONG><BR>Log containing the received sensor
+	measurements. It is created by the plugin the first time it is run and is not installed 
+	with the other files. Location: <STRONG>SIP/data</STRONG></P>
+</UL>
+<H2 CLASS="western"><A NAME="using-the-water-tank-plugin"></A>Using the
+Water Tank plugin</H2>
+<P>For more help during usage, instructions have been icluded in the plugin page itself,
+	explaining the purpose of fields in settings and water tand configuration.
+</P>
+</BODY>
+</HTML>

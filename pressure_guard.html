@@ -1,0 +1,116 @@
+$def with(settings, station_names, master_station_indexes)
+
+$var title: $_('SIP Pressure-Guard Plugin')
+$var page: pressure_guard_plugin  
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Pressure Guard Plugin</title>
+    <style>
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1em;
+        }
+        .code-font {
+            font-family: monospace;
+        }
+        fieldset {
+            margin-bottom: 2em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        td, th {
+            padding: 0.5em;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body> -->
+    <div class="top-row">
+        <h2>Master Guard</h2>
+        <div class="code-font" id="pressureDisplay">Last updated: --</div>
+    </div>
+
+    <fieldset>
+        <legend>MQTT Topics</legend>
+        <label>Subscribe to:</label><br>
+        <input type="text" id="subscribeTopic" value="sensors/pressure"><br><br>
+        <label>Publish to:</label><br>
+        <button onclick="publishMessage()">Publish</button>
+        <input type="text" id="publishTopic" value="commands/pump">
+    </fieldset>
+
+    <fieldset>
+        <legend>Master Stations</legend>
+        <table>
+            <tr>
+                <th>Station</th>
+                <th>Block</th>
+            </tr>
+            $for i, name in enumerate(station_names):
+                $if (i + 1) in master_station_indexes:
+                    <tr><td>$name</td><td>
+                        <select id="op_$i">
+                            $for op in ['<', '>', '=', '!=', '<=', '>=']:
+                                <option value="$op">$op</option>
+                        </select>
+                        <input type="text" id="val_$i" size="4">
+                        <button onclick="saveRule($i)">Submit</button>
+                        </td>
+                    </tr>
+        </table>
+    </fieldset>
+
+    <div id="modal" style="display:none; position:fixed; top:30%; left:30%; background:#fff; padding:1em; border:1px solid #000;">
+        <p id="modalMessage"></p>
+        <button onclick="document.getElementById('modal').style.display='none'">Close</button>
+    </div>
+
+    <script>
+        function updatePressure() {
+            fetch("/plugins/master_guard/get_pressure_data")
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById("pressureDisplay").innerText =
+                        `Last updated: $${data.timestamp || '--'} | Pressure: $${data.pressure ?? '--'}`;
+                });
+        }
+
+        function publishMessage() {
+            const topic = document.getElementById("publishTopic").value;
+            fetch("/plugins/master_guard/publish_mqtt", {
+                method: "POST",
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'topic='+encodeURIComponent(topic)
+            })
+            .then(res => res.json())
+            .then(data => {
+                const modal = document.getElementById("modal");
+                const msg = data.success
+                    ? `Message successfully sent to $${data.topic}`
+                    : `Error sending message to $${data.topic}. Error: $${data.error}`;
+                document.getElementById("modalMessage").innerText = msg;
+                modal.style.display = "block";
+            });
+        }
+
+        function saveRule(sid) {
+            const op = document.getElementById('op_'+sid).value;
+            const val = document.getElementById('val_'+sid).value;
+            fetch("/plugins/master_guard/save_block_rule", {
+                method: "POST",
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'sid=' + sid + '&op='+encodeURIComponent(op)+'&val=' +encodeURIComponent(val)
+            });
+        }
+
+
+        setInterval(updatePressure, 3000);
+        updatePressure();
+    </script>
+<!-- </body>
+</html> -->

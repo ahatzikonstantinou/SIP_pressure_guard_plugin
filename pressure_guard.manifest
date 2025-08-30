@@ -1,0 +1,19 @@
+Description: Uses mqtt plugin and allows a SIP system to define conditions that will blocka master station from turning on. This can help in scenarios such as:
+Master A is the pump bringing water from a water tank. Master BA and BC is the pump and valve that brings water from the public water grid. If the pressure at water-pipe of A is loawer than a threshold that means that there is not enough water in the tank. A condition for master A "< 2" will block master A from turning on if pressure is less than 2. A condition for master BA and BC ">= 2" will have the opposite effect. So if all masters are activated and pressure is less than 2, master A will be blocked but masters BA and BC will stay on. When pressure is >= 2 and all masters are activated, master A will stay on and masters BA and BC will be blocked. So depending on water tank pressure, masters A and BA/BC will stay or be blocked.
+Copyright 2023
+Author: Antonios Hatzikonstantinou
+Email: ahatzikonsntantinou@protonmail.com
+License: GNU GPL 3.0
+icons from: <a href="https://www.flaticon.com/free-icons/white-arrow" title="white arrow icons">White arrow icons created by Hogr - Flaticon</a>
+
+Requirements: mqtt
+
+##### List all plugin files below preceded by a blank line [file_name.ext path] relative to SIP directory #####
+
+pressure_guard.py plugins
+pressure_guard.html templates
+pressure_guard-plugin-docs.html templates
+additional-methods.min.js static/scripts
+jquery.validate.min.js static/scripts
+mqttws31.js static/scripts
+pressure_guard.manifest plugins/manifests
