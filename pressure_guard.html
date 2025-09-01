@@ -2,7 +2,7 @@ $def with(settings, station_names, master_station_indexes)
 
 $var title: $_('SIP Pressure-Guard Plugin')
 $var page: pressure_guard_plugin  
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <title>Pressure Guard Plugin</title>
@@ -16,8 +16,13 @@ $var page: pressure_guard_plugin
         .code-font {
             font-family: monospace;
         }
+        .pressure-guard.station-name
+        {
+            text-align: right;
+        }
         fieldset {
             margin-bottom: 2em;
+            border: none;
         }
         table {
             width: 100%;
@@ -29,7 +34,7 @@ $var page: pressure_guard_plugin
         }
     </style>
 </head>
-<body> -->
+<body>
     <div class="top-row">
         <h2>Master Guard</h2>
         <div class="code-font" id="pressureDisplay">Last updated: --</div>
@@ -37,11 +42,19 @@ $var page: pressure_guard_plugin
 
     <fieldset>
         <legend>MQTT Topics</legend>
-        <label>Subscribe to:</label><br>
-        <input type="text" id="subscribeTopic" value="sensors/pressure"><br><br>
-        <label>Publish to:</label><br>
-        <button onclick="publishMessage()">Publish</button>
-        <input type="text" id="publishTopic" value="commands/pump">
+        <table>
+            <tr>
+                <td>Subscribe to:</td>
+                <td><input type="text" id="subscribeTopic" ></td>
+            </tr>
+        <tr>
+            <td>Publish to:</td>
+            <td>
+                <input type="text" id="publishTopic">
+                <button onclick="publishMessage()">Publish</button>
+        </td>
+        </tr>
+        </table>
     </fieldset>
 
     <fieldset>
@@ -53,17 +66,18 @@ $var page: pressure_guard_plugin
             </tr>
             $for i, name in enumerate(station_names):
                 $if (i + 1) in master_station_indexes:
-                    <tr><td>$name</td><td>
-                        <select id="op_$i">
+                    <tr><td class="pressure-guard station-name">$name</td><td>
+                        <select id="op_$master_station_indexes[i]">
                             $for op in ['<', '>', '=', '!=', '<=', '>=']:
                                 <option value="$op">$op</option>
                         </select>
-                        <input type="text" id="val_$i" size="4">
-                        <button onclick="saveRule($i)">Submit</button>
+                        <input type="text" id="val_$master_station_indexes[i]" size="4" >                        
                         </td>
                     </tr>
         </table>
     </fieldset>
+    <button onclick="saveAllSettings()">Save Settings</button>
+
 
     <div id="modal" style="display:none; position:fixed; top:30%; left:30%; background:#fff; padding:1em; border:1px solid #000;">
         <p id="modalMessage"></p>
@@ -71,18 +85,35 @@ $var page: pressure_guard_plugin
     </div>
 
     <script>
+        let master_station_indexes = JSON.parse('$:master_station_indexes');
+        let settings = JSON.parse('$:settings');
+
+        document.getElementById("subscribeTopic").value = settings.mqtt.subscribe;
+        document.getElementById("publishTopic").value = settings.mqtt.publish;
+
+        for (const sid in settings.rules) {
+            const rule = settings.rules[sid];
+            const opSelect = document.getElementById(`op_$${sid}`);
+            const valInput = document.getElementById(`val_$${sid}`);
+
+            if (opSelect && valInput) {
+                opSelect.value = rule.op;
+                valInput.value = rule.val;
+            }
+        }
+
         function updatePressure() {
-            fetch("/plugins/master_guard/get_pressure_data")
+            fetch("/pressure-guard-get-data")
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById("pressureDisplay").innerText =
-                        `Last updated: $${data.timestamp || '--'} | Pressure: $${data.pressure ?? '--'}`;
+                        "Last updated: " + (data.timestamp || '--') + " | Pressure: " + data.pressure ?? '--';
                 });
         }
 
         function publishMessage() {
             const topic = document.getElementById("publishTopic").value;
-            fetch("/plugins/master_guard/publish_mqtt", {
+            fetch("/pressure-guard-publish-mqtt", {
                 method: "POST",
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: 'topic='+encodeURIComponent(topic)
@@ -91,26 +122,46 @@ $var page: pressure_guard_plugin
             .then(data => {
                 const modal = document.getElementById("modal");
                 const msg = data.success
-                    ? `Message successfully sent to $${data.topic}`
-                    : `Error sending message to $${data.topic}. Error: $${data.error}`;
+                    ? 'Message successfully sent to ' + data.topic
+                    : 'Error sending message to ' + data.topic + '. Error: ' + data.error;
+                document.getElementById("modalMessage").innerText = msg;
+                modal.style.display = "block";
+            });
+        }        
+
+        function saveAllSettings() {
+            const sub = document.getElementById("subscribeTopic").value;
+            const pub = document.getElementById("publishTopic").value;
+
+            const rules = {};
+            master_station_indexes.forEach((sid) => {
+                const op = document.getElementById('op_' + sid).value;
+                const val = document.getElementById('val_' + sid).value;
+                rules[sid] = { op, val };
+            });
+
+            fetch("/pressure-guard-save-all-settings", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subscribe: sub,
+                    publish: pub,
+                    rules: rules
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const modal = document.getElementById("modal");
+                const msg = data.success
+                    ? "All settings saved successfully."
+                    : 'Error saving settings: ' + data.error;
                 document.getElementById("modalMessage").innerText = msg;
                 modal.style.display = "block";
             });
         }
 
-        function saveRule(sid) {
-            const op = document.getElementById('op_'+sid).value;
-            const val = document.getElementById('val_'+sid).value;
-            fetch("/plugins/master_guard/save_block_rule", {
-                method: "POST",
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'sid=' + sid + '&op='+encodeURIComponent(op)+'&val=' +encodeURIComponent(val)
-            });
-        }
-
-
         setInterval(updatePressure, 3000);
         updatePressure();
     </script>
-<!-- </body>
-</html> -->
+</body>
+</html>
