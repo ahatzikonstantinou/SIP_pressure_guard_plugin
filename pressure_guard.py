@@ -179,6 +179,7 @@ class save_all_settings(ProtectedPage):
             settings["mqtt"]["subscribe"] = data.get("subscribe", "")
             settings["mqtt"]["publish"] = data.get("publish", "")
 
+            settings["rules"] = {}  # start clean
             rules = data.get("rules", {})
             for sid_str, rule in rules.items():
                 sid = int(sid_str)
