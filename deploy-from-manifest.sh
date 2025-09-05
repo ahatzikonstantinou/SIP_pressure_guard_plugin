@@ -7,10 +7,12 @@ DEFAULT_DESTINATION="/opt/SIP2"
 
 # === Usage info ===
 usage() {
-    echo "Usage: $0 <project_folder> [username] [host] [manifest_file] [--dry-run]"
-    echo "Example: $0 ./ antonis 192.168.3.23 pressure_guard.manifest --dry-run"
+    echo "Usage: $0 <project_folder> [username] [host] [manifest_file] [destination_folder] [--dry-run]"
+    echo "Note: manifest_file must end with .manifest"
+    echo "Example: $0 ./ antonis 192.168.3.23 pressure_guard.manifest /opt/SIP --dry-run"
     exit 1
 }
+
 
 # === Initialize flags ===
 DRYRUN=false
@@ -30,26 +32,35 @@ done
 
 # === Assign positional arguments ===
 PROJECT_FOLDER="${POSITIONAL_ARGS[0]}"
-DESTINATION="${POSITIONAL_ARGS[1]}"
+PI_USERNAME="${POSITIONAL_ARGS[1]:-$DEFAULT_PI_USERNAME}"
+PI_HOST="${POSITIONAL_ARGS[2]:-$DEFAULT_PI_HOST}"
+PROJECT_FOLDER="${POSITIONAL_ARGS[0]}"
+PI_USERNAME="${POSITIONAL_ARGS[1]:-$DEFAULT_PI_USERNAME}"
+PI_HOST="${POSITIONAL_ARGS[2]:-$DEFAULT_PI_HOST}"
 
-if [[ "$DESTINATION" =~ ^[a-zA-Z0-9._%-]+@[a-zA-Z0-9._%-]+:.* ]]; then
-  RSYNC_DEST="$DESTINATION"
-else
-  PI_USERNAME="${POSITIONAL_ARGS[1]:-$DEFAULT_PI_USERNAME}"
-  PI_HOST="${POSITIONAL_ARGS[2]:-$DEFAULT_PI_HOST}"
-  RSYNC_DEST="$PI_USERNAME@$PI_HOST:$DEFAULT_DESTINATION/"
-fi
+# Detect manifest file from POSITIONAL_ARGS if not already set
+for arg in "${POSITIONAL_ARGS[@]:3}"; do
+  if [[ "$arg" == *.manifest ]]; then
+    MANIFEST_FILE="$arg"
+    break
+  fi
+done
 
+# Set destination folder to the next argument after manifest (if any)
+DESTINATION_FOLDER="$DEFAULT_DESTINATION"
+for ((i=3; i<${#POSITIONAL_ARGS[@]}; i++)); do
+  if [[ "${POSITIONAL_ARGS[$i]}" != *.manifest ]]; then
+    DESTINATION_FOLDER="${POSITIONAL_ARGS[$i]}"
+  fi
+done
+
+RSYNC_DEST="$PI_USERNAME@$PI_HOST:$DESTINATION_FOLDER/"
+[ "$QUIET" = false ] && echo "📁 Destination folder on remote: $DESTINATION_FOLDER"
+[ "$QUIET" = false ] && echo "📄 Using manifest: ${MANIFEST_FILE:-(auto-detecting)}"
 
 # === Validate project folder ===
 if [ -z "$PROJECT_FOLDER" ] || [ ! -d "$PROJECT_FOLDER" ]; then
     echo "❌ Project folder '$PROJECT_FOLDER' is missing or invalid."
-    usage
-fi
-
-# === Validate destination ===
-if [ -z "$DESTINATION" ]; then
-    echo "❌ Destination not provided."
     usage
 fi
 
@@ -79,7 +90,7 @@ if [ -z "$START_LINE" ]; then
 fi
 
 [ "$QUIET" = false ] && echo "📦 Reading file list from manifest..."
-DESTINATION_PREFIX="$DEFAULT_DESTINATION"
+DESTINATION_PREFIX="$DESTINATION_FOLDER"
 RSYNC_FLAGS="-avz --progress --relative"
 FILE_LIST=()
 

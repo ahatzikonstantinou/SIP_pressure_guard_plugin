@@ -23,8 +23,8 @@ urls.extend([
 # fmt: on 
 
 
-if not hasattr(gv, "master_block_rules"):
-    gv.master_block_rules = {}
+if not hasattr(gv, "master_blocked"):
+    gv.master_blocked = {}
 
 
 # Add this plugin to the PLUGINS menu ["Menu Name", "URL"], (Optional)
@@ -55,11 +55,13 @@ def fill_gv():
 
     if not pressure_value:
         return
-    
+    print(f'Will update master station block rules: {json.dumps(settings["rules"], indent=4)}')
     for sid_str, rule in settings["rules"].items():
         sid = int(sid_str)  # station index (1-based)
         op = rule["op"]
         val = rule["val"]
+
+        print(f"Updating block rule for sid:{sid-1}, op: {op}, with val={val}")
 
         if op == "<":
             gv.master_blocked[sid - 1] = pressure_value < val
@@ -104,7 +106,7 @@ def update_mqtt_subscription(topic):
         print(f"Initializing subscribe_topic = None")
         update_mqtt_subscription.subscribe_topic = None  # initialize once
 
-    if mqtt and mqtt.is_connected() and update_mqtt_subscription.subscribe_topic:
+    if mqtt.is_connected() and update_mqtt_subscription.subscribe_topic:
         print(f"Unsubscribe({update_mqtt_subscription.subscribe_topic})")
         mqtt.unsubscribe(update_mqtt_subscription.subscribe_topic)
 
@@ -191,7 +193,7 @@ class save_all_settings(ProtectedPage):
 
             fill_gv()
             update_mqtt_subscription(settings["mqtt"]["subscribe"])
-            print(f"Final: {json.dumps(settings, indent=4)}", )
+            print(f"Final: {json.dumps(settings, indent=4)}")
 
             #Save to file
             with open(DATA_FILE, u"w") as f:
@@ -200,3 +202,15 @@ class save_all_settings(ProtectedPage):
             return json.dumps({"success": True})
         except Exception as e:
             return json.dumps({"success": False, "error": str(e)})
+        
+max_mqtt_attempts = 10
+mqtt_attempts = 0
+# The mqtt module waits for 5 secs before
+while not mqtt.is_connected():
+    print(f"mqtt not conencted yet at attempt: {mqtt_attempts} (max:{max_mqtt_attempts}). Will sleep for 1 sec")
+    time.sleep(1)
+
+if not mqtt.is_connected():
+    print(f"After {mqtt_attempts} mqtt is still not connected. Fatal Error. The plugin will not listen for mqtt messages.")
+else:
+    update_mqtt_subscription(settings["mqtt"]["subscribe"])
