@@ -32,6 +32,12 @@ $var page: pressure_guard_plugin
             padding: 0.5em;
             border: 1px solid #ccc;
         }
+        .notes {
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 0.5rem;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -54,6 +60,28 @@ $var page: pressure_guard_plugin
                 <button onclick="publishMessage()">Publish</button>
         </td>
         </tr>
+        </table>
+    </fieldset>
+
+    <fieldset>
+        <legend>Notification</legend>
+        <table>
+            <tr>
+                <td>Subject:</td>
+                <td><input type="text" id="notification_subject"></td>
+            </tr>
+            <tr>
+                <td>Message: <span class="notes">(Use {pressure} as a placeholder for the pressure value)</span></td>
+                <td><textarea id="notification_message"></td>
+            </tr>
+            <tr>
+                <td><input type="checkbox" id="send_email">Email:</td>
+                <td><input type="text" id="notification_message"></td>
+            </tr>
+            <tr>
+                <td><input type="checkbox" id="send_xmpp">Xmpp:</td>
+                <td><input type="text" id="notification_message"></td>
+            </tr>
         </table>
     </fieldset>
 
